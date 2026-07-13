@@ -1,7 +1,22 @@
 import { useState, useEffect } from 'react'
 import { API } from '../api'
 import type { Category } from '../types'
-import { ForkKnifeIcon, TrashIcon } from '../icons'
+import { TrashIcon } from '../icons'
+
+// Gradient palette — picked to evoke culinary materials
+const CAT_GRADIENTS = [
+  ['#0e4d3a', '#1a8c5e'],
+  ['#0d3d52', '#1a6e8c'],
+  ['#4a1a1a', '#8b3a3a'],
+  ['#3d2a0d', '#7d5228'],
+  ['#1a2a4a', '#2d4a8c'],
+  ['#3a1a4a', '#6b3a8c'],
+  ['#4a3a0d', '#8c6b1a'],
+  ['#1a3a3a', '#2d7a7a'],
+]
+
+const catGradient = (id: string) =>
+  CAT_GRADIENTS[id.charCodeAt(0) % CAT_GRADIENTS.length]
 
 interface CategoryForm {
   name: string
@@ -38,6 +53,7 @@ function CategoryModal({ onClose, onSave }: { onClose: () => void; onSave: (f: C
               value={form.name}
               onChange={e => setForm({ ...form, name: e.target.value })}
               className={errors.name ? 'input-error' : ''}
+              autoFocus
             />
             {errors.name && <span className="field-error">{errors.name}</span>}
           </div>
@@ -111,42 +127,72 @@ export default function CategoriesPage() {
   return (
     <div className="dashboard-body">
       <div className="section-card">
+        {/* Header */}
         <div className="section-header">
-          <h2>Manage Categories</h2>
-          <button className="add-category-btn" title="Add category" onClick={() => setShowModal(true)}>+</button>
+          <div className="cat-page-title-row">
+            <h2>Categories</h2>
+            {!loading && (
+              <span className="cat-count-chip">{categories.length}</span>
+            )}
+          </div>
+          <button className="cat-add-btn-primary" onClick={() => setShowModal(true)}>
+            + Add Category
+          </button>
         </div>
 
         {loading && <p className="cat-status">Loading…</p>}
         {error   && <p className="cat-status cat-error">{error}</p>}
 
-        {!loading && !error && categories.length === 0 && (
-          <p className="cat-status">No categories yet.</p>
-        )}
-
-        <div className="categories-full-grid">
-          {categories.map(cat => (
-            <div key={cat.id} className="cat-full-card">
-              {cat.imageUrl ? (
-                <img src={cat.imageUrl} alt={cat.name} className="cat-full-img" />
-              ) : (
-                <div className="cat-full-img cat-full-img-placeholder">
-                  <ForkKnifeIcon />
-                </div>
-              )}
-              <div className="cat-full-info">
-                <div className="cat-full-name">{cat.name}</div>
-                {cat.description && (
-                  <div className="cat-full-desc">{cat.description}</div>
+        {/* Card Grid */}
+        <div className="cat-grid">
+          {categories.map(cat => {
+            const [c0, c1] = catGradient(cat.id)
+            return (
+              <div key={cat.id} className="cat-card">
+                {/* Cover */}
+                {cat.imageUrl ? (
+                  <img src={cat.imageUrl} alt={cat.name} className="cat-card-img" />
+                ) : (
+                  <div
+                    className="cat-card-placeholder"
+                    style={{ background: `linear-gradient(145deg, ${c0}, ${c1})` }}
+                  >
+                    <span className="cat-card-initial">{cat.name[0]}</span>
+                  </div>
                 )}
-                <div className="cat-full-date">
-                  Added {new Date(cat.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+
+                {/* Body */}
+                <div className="cat-card-body">
+                  <div className="cat-card-title">{cat.name}</div>
+                  {cat.description && (
+                    <div className="cat-card-desc">{cat.description}</div>
+                  )}
+                  <div className="cat-card-footer">
+                    <span className="cat-card-date">
+                      {new Date(cat.createdAt).toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric', year: 'numeric',
+                      })}
+                    </span>
+                    <button
+                      className="cat-card-delete"
+                      title="Delete category"
+                      onClick={() => handleDelete(cat.id)}
+                    >
+                      <TrashIcon />
+                    </button>
+                  </div>
                 </div>
               </div>
-              <button className="trash-btn" title="Delete" onClick={() => handleDelete(cat.id)}>
-                <TrashIcon />
-              </button>
-            </div>
-          ))}
+            )
+          })}
+
+          {/* Add-category slot */}
+          {!loading && (
+            <button className="cat-add-card" onClick={() => setShowModal(true)}>
+              <div className="cat-add-icon">+</div>
+              <span className="cat-add-label">New Category</span>
+            </button>
+          )}
         </div>
       </div>
 
